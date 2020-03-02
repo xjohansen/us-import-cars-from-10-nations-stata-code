@@ -1,0 +1,226 @@
+reg lncars lncduties
+g lncars=ln(autores)
+g lncduties=ln(carduties)
+g ctariff=carduties/autores
+reg lncars ctariff
+reg lncars ctariff i.nation i.year
+reg lncars ctariff i.nation 
+reg lncars ctariff i.nation i.year if year>=2015
+reg lncars ctariff i.nation i.year if year>=2017
+clear
+cd D:\232调查资料\uscar232
+  use 19962019monthsusimcarsduties.dta
+  sort nation year month
+save temp1
+clear
+use 19962019monthsusimcars.dta
+sort nation year month
+save temp2
+use temp1
+merge 1:1 nation year month  using temp2
+erase temp1.dta
+erase temp2.dta
+drop  _merge
+order carduties, after(autores)
+order nation, after(Country)
+order month, after(year)
+clear
+cd D:\232调查资料\uscar232
+insheet using 1996201909calculateddutiesusimportcars.csv,names case clear
+rename (Jan	Feb	Mar	Apr	May	Jun	Jul	Aug	Sep	Oct	Nov	Dec)  ///
+(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12)
+reshape long v, i(year CID) j(month)
+//save import, replace
+ rename v carduties
+label variable carduties "duties of autoes and parts"
+
+egen date=concat(month year),decode
+
+destring date,replace
+format date %07.0f
+
+ssc install todate
+net install todate
+findit todate
+net install todate, from(c:\git\todate)
+net install todate, replace from(c:\todate)
+
+todate date, gen(datevar) pattern(mmyyyy)
+
+drop date
+ rename month months
+rename datevar month
+encode Country,g(nation)
+save "D:\232调查资料\uscar232\1996201909monthsusimcarsduties.dta"
+keep if year>=2015
+save "D:\232调查资料\uscar232\2015201909monthsusimcarsduties.dta", replace
+keep if year>=2018
+save "D:\232调查资料\uscar232\2018201909monthsusimcarsduties.dta", replace
+keep if year>=2017
+ save "D:\232调查资料\uscar232\2017201909monthsusimcarsduties.dta", replace
+sort nation month
+foreach i of numlist 1/10{
+		line carduties month if nation==`i' || ///
+		lfit carduties month if nation==`i', ///
+		saving(p`i',replace) legend(off) ///
+		xlabel(,grid) ylabel(,grid) ///
+		title(nations`i') scheme(s1momo) ///
+		plotregion(style(none) margin(0) fcolor(white)) ///
+		graphregion(fcolor(white))
+		graph export nation`i'.pdf,replace
+	}
+
+
+
+
+
+	
+
+#d;
+graph combine p1.gph p2.gph p3.gph p4.gph 
+p5.gph p6.gph p7.gph p8.gph
+p9.gph p10.gph ,
+cols(5) title(Monthly trends in U.S. auto and parts import tariffs：201801-201909
+ for 10 nations, size(medium)) 
+ note(Belgium China Czech France Germany Japan Mexico Korea Spain UK)
+scheme(s1momo) plotregion(style(none) margin(0) 
+fcolor(white)) graphregion(fcolor(white))
+ ; 
+graph export carduties.pdf,replace
+;
+#d cr
+
+
+tabout nation using sum.xls,  ///
+c(mean carduties median carduties max carduties min autores) ///
+ sum replace
+
+
+
+
+clear
+cd D:\232调查资料\uscar232
+insheet using 1996201909usimportcarsfrom10nations.csv,names case clear
+rename (Jan	Feb	Mar	Apr	May	Jun	Jul	Aug	Sep	Oct	Nov	Dec)  ///
+(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12)
+reshape long v, i(year CID) j(month)
+//save import, replace
+ rename v autores
+label variable autores "autoes and parts"
+
+egen date=concat(month year),decode
+
+destring date,replace
+format date %06.0f
+
+ssc install todate
+findit todate
+
+todate date, gen(datevar) pattern(mmyyyy)
+
+drop date
+ rename month months
+rename datevar month
+encode Country,g(nation)
+save "D:\232调查资料\uscar232\1996201909monthsusimcars.dta"
+keep if year>=2015
+save "D:\232调查资料\uscar232\2015201909monthsusimcars.dta", replace
+keep if year>=2018
+save "D:\232调查资料\uscar232\2018201909monthsusimcars.dta", replace
+keep if year>=2017
+save "D:\232调查资料\uscar232\2017201909monthsusimcars.dta", replace
+clear
+sort nation month
+foreach i of numlist 1/10{
+		line autores month if nation==`i' || ///
+		lfit autores month if nation==`i', ///
+		saving(p`i',replace) legend(off) ///
+		xlabel(,grid) ylabel(,grid) ///
+		title(nations`i') scheme(s1momo) ///
+		plotregion(style(none) margin(0) fcolor(white)) ///
+		graphregion(fcolor(white))
+		graph export nation`i'.pdf,replace
+	}
+
+
+
+
+
+	
+
+#d;
+graph combine p1.gph p2.gph p3.gph p4.gph 
+p5.gph p6.gph p7.gph p8.gph
+p9.gph p10.gph ,
+cols(5) title( Monthly trends in U.S. auto and parts imports:201801-201909
+ for 10 nations, size(medium)) 
+ note(Belgium China Czech France Germany Japan Mexico Korea Spain UK)
+scheme(s1momo) plotregion(style(none) margin(0) 
+fcolor(white)) graphregion(fcolor(white))
+ ; 
+graph export autoparts.pdf,replace
+;
+#d cr
+
+
+tabout nation using sum.xls,  ///
+c(mean autores median autores max autores min autores) ///
+ sum replace
+
+
+egen nations=group(nation)
+
+label var date "Monthly date"
+label var import "US. Imports for consumption"
+label data "All Import Commodities: customs value by customs value, montly data"
+
+	foreach i of numlist 1/10{
+		line autores month if nation==`i' || ///
+		lfit autores month if nation==`i', ///
+		saving(p`i',replace) legend(off) ///
+		xlabel(,grid) ylabel(,grid) ///
+		title(nations`i') scheme(s1color) ///
+		plotregion(style(none) margin(0) fcolor(white)) ///
+		graphregion(fcolor(white))
+		graph export nation`i'.pdf,replace
+	}
+
+
+
+
+
+	
+
+#d;
+graph combine p1.gph p2.gph p3.gph p4.gph 
+p5.gph p6.gph p7.gph p8.gph
+p9.gph p10.gph ,
+cols(5) title(US autoes imports  trends 1996-2019
+ for 10 nations, size(medium)) 
+ note(nations numbers are group numbers of ascending sorted NATION Numbers.)
+scheme(s1color) plotregion(style(none) margin(0) 
+fcolor(white)) graphregion(fcolor(white))
+ ; 
+graph export autoparts.pdf,replace
+;
+#d cr
+
+
+tabout nation using sum.xls,  ///
+c(mean autores median autores max autores min autores) ///
+ sum replace
+
+
+clear
+
+import excel "D:\us232\19962019usimportcarsfrom10nations.xlsx", sheet("usimportcars") firstrow
+//drop if year==. & NAICNumber==.
+rename (Jan-Dec) (autores1 autores2 autores3 autores4 autores5 autores6 autores7 autores8 autores9 autores10 autores11 autores12)
+reshape long autores, i(year CID) j(month)
+
+
+gen month = m(1996m1) +_n-1
+clear
+destring  country,replace force
+encode country,g(nation)
+reshape long autos, i(nation) j(year)
